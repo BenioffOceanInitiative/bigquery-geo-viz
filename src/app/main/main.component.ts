@@ -121,12 +121,15 @@ export class MainComponent implements OnInit, OnDestroy {
   // Current style rules
   styles: Array<StyleRule> = [];
 
+  // Toggle for whether the map auto fits bounds on new features
+  autoFitBounds: boolean = true;
+
   // CodeMirror configuration
   readonly cmConfig = {
     indentWithTabs: true,
     smartIndent: true,
     lineNumbers: true,
-    lineWrapping: true
+    lineWrapping: true,
   };
   readonly cmDebouncer: Subject<string> = new Subject();
   cmDebouncerSub: Subscription;
@@ -156,6 +159,7 @@ export class MainComponent implements OnInit, OnDestroy {
     this.geoColumnNames = [];
     this.rows = [];
     this.page = 0;
+    this.autoFitBounds = true;
 
     // Read parameters from URL
     this.projectID = this._route.snapshot.paramMap.get("project");
@@ -555,9 +559,9 @@ ${USER_QUERY_END_MARKER}\n
     this.isEditingPagination = false;
   }
 
-
-
-
+  updateAutoFitBounds(event: any) {
+    this.autoFitBounds = event.checked;
+  }
 
   onApplyStylesClicked() {
     this.clearGeneratedSharingUrl();

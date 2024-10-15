@@ -137,7 +137,7 @@ mat-progress-spinner {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-top: 8px;
+    margin: 8px 0px 8px 0px;
     flex-wrap: wrap;
 }
 
