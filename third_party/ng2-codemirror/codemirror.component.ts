@@ -27,6 +27,8 @@ import * as CodeMirror from 'codemirror';
 })
 export class CodemirrorComponent {
 
+
+    
     @Input() config;
 
     @Output() change = new EventEmitter();
@@ -66,6 +68,7 @@ export class CodemirrorComponent {
     ngAfterViewInit() {
         this.config = this.config || {};
         this.codemirrorInit(this.config);
+        
     }
 
     /**
@@ -80,6 +83,23 @@ export class CodemirrorComponent {
             'Ctrl-Enter': () => {
                 this.query.emit(true);
             }
+        });
+        var sqlKeywords = "alter and as asc between by count create delete desc distinct drop from group having in insert into is join like not on or order select set table union update values where limit ";
+
+        function set(str) {
+            var obj = {}, words = str.split(" ");
+            for (var i = 0; i < words.length; ++i) obj[words[i]] = true;
+            return obj;
+        }
+        
+        CodeMirror.defineMIME("text/x-sql", {
+            name: "sql",
+            keywords: set(sqlKeywords + "begin"),
+            builtin: set("bool boolean bit blob enum long longblob longtext medium mediumblob mediumint mediumtext time timestamp tinyblob tinyint tinytext text bigint int int1 int2 int3 int4 int8 integer float float4 float8 double char varbinary varchar varcharacter precision real date datetime year unsigned signed decimal numeric"),
+            atoms: set("false true null unknown"),
+            operatorChars: /^[*+\-%<>!=]/,
+            dateSQL: set("date time timestamp"),
+            support: set("ODBCdotTable doubleQuote binaryNumber hexNumber")
         });
     }
 

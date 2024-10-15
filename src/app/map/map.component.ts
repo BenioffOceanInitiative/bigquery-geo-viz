@@ -66,6 +66,9 @@ export class MapComponent implements AfterViewInit {
   // Index for viewing geojson data one-by-one, 0 indicates view all data.
   private _page: number = 0;
 
+  // Whether or not the bounds should be adjusted on new features (i.e. clicking on Geography Column, new queries)
+  private _autoFitBounds: boolean = true;
+
   @Input()
   set rows(rows: object[]) {
     this._rows = rows;
@@ -84,6 +87,7 @@ export class MapComponent implements AfterViewInit {
   @Input()
   set page(page: number) {
     this._page = page;
+    this.updateBounds();
     this.updateStyles();
   }
 
@@ -91,6 +95,11 @@ export class MapComponent implements AfterViewInit {
   set styles(styles: StyleRule[]) {
     this._styles = styles;
     this.updateStyles();
+  }
+
+  @Input()
+  set autoFitBounds(autoFitBounds: boolean) {
+    this._autoFitBounds = autoFitBounds;
   }
 
   constructor(private _ngZone: NgZone, iterableDiffers: IterableDiffers) {
@@ -173,21 +182,25 @@ export class MapComponent implements AfterViewInit {
       this._activeGeometryTypes.add(feature.geometry['type']);
     });
 
-    // Fit viewport bounds to the data.
-    const [minX, minY, maxX, maxY] = bbox({ type: 'FeatureCollection', features: this._features });
+    // Fit viewport bounds to the new data.
+    this.updateBounds()
+  }
+  
+  /**
+   * Updates the viewport bounds of data in the Maps API
+   */
+  updateBounds() {
+      // Fit viewport bounds to the data.
+    const [minX, minY, maxX, maxY] = bbox({ type: 'FeatureCollection', features: this._page === 0 ? this._features : [this._features[this._page - 1]]});
     const bounds = new google.maps.LatLngBounds(
       new google.maps.LatLng(minY, minX),
       new google.maps.LatLng(maxY, maxX)
     );
-    if (!bounds.isEmpty()) { this.map.fitBounds(bounds); }
+    if (!bounds.isEmpty() && this._autoFitBounds) { this.map.fitBounds(bounds); }
   }
 
-
-  updatePage() {
-    if (!this.map) return;
-    // const data = this._page === -1 ? this._features : [this._features[this._page]];
-    
-  }
+  
+  
   /**
    * Updates styles applied to all GeoJSON features.
    */
