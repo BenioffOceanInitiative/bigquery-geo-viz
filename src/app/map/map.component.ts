@@ -53,7 +53,6 @@ export class MapComponent implements AfterViewInit {
   private _styles: StyleRule[] = [];
   private _geoColumn: string;
   private _activeGeometryTypes = new Set<string>();
-  private _geoJSONLayer = new GeoJsonLayer();
 
   // Detects how many times we have received new values.      
   private _numChanges = 0;
@@ -62,9 +61,6 @@ export class MapComponent implements AfterViewInit {
 
   private _deckLayer: GoogleMapsOverlay = null;
   private _iterableDiffer = null;
-  
-  // Index for viewing geojson data one-by-one, 0 indicates view all data.
-  private _page: number = 0;
 
   @Input()
   set rows(rows: object[]) {
@@ -78,12 +74,6 @@ export class MapComponent implements AfterViewInit {
   set geoColumn(geoColumn: string) {
     this._geoColumn = geoColumn;
     this.updateFeatures();
-    this.updateStyles();
-  }
-
-  @Input()
-  set page(page: number) {
-    this._page = page;
     this.updateStyles();
   }
 
@@ -139,7 +129,6 @@ export class MapComponent implements AfterViewInit {
           this.map.addListener('click', (e) => this._onClick(e));
         });
       });
-    console.log("page init again for some reason")
   }
 
   _onClick(e: google.maps.MouseEvent) {
@@ -182,12 +171,6 @@ export class MapComponent implements AfterViewInit {
     if (!bounds.isEmpty()) { this.map.fitBounds(bounds); }
   }
 
-
-  updatePage() {
-    if (!this.map) return;
-    // const data = this._page === -1 ? this._features : [this._features[this._page]];
-    
-  }
   /**
    * Updates styles applied to all GeoJSON features.
    */
@@ -202,7 +185,7 @@ export class MapComponent implements AfterViewInit {
     const colorRe = /(\d+), (\d+), (\d+)/;
     const layer = new GeoJsonLayer({
       id: LAYER_ID,
-      data: this._page === 0 ? this._features : [this._features[this._page - 1]],
+      data: this._features,
       pickable: true,
       autoHighlight: true,
       highlightColor: [219, 68, 55], // #DB4437
