@@ -14,7 +14,7 @@
 <div class="view">
   <mat-sidenav-container class="sidenav-container">
     <mat-sidenav-content>
-      <app-map (maxPaginationChange)="handleMaxPaginationChange($event)" [rows]="rows" [page]="page" [geoColumn]="schemaFormGroup.controls.geoColumn.value" [styles]="styles"></app-map>
+      <app-map (maxPaginationChange)="handleMaxPaginationChange($event)" [rows]="rows" [page]="page" [geoColumn]="schemaFormGroup.controls.geoColumn.value" [styles]="styles" [autoFitBounds]="autoFitBounds"></app-map>
     </mat-sidenav-content>
     <mat-sidenav #sidenav mode="side" position="start" [(opened)]="sideNavOpened">
       <section class="drawer">
@@ -46,6 +46,9 @@
                 </button>
                 <mat-progress-spinner *ngIf="pending" mode="indeterminate" [diameter]="24" [strokeWidth]="4">
                 </mat-progress-spinner>
+                <mat-checkbox style="margin-top: 16px; display: block" [checked]="autoFitBounds" (change)="updateAutoFitBounds($event)" color="primary">
+                  Auto adjust map to fit new bounds
+                </mat-checkbox>
                 <p class="sql-caption" *ngIf="bytesProcessed >= 0">
                   Estimated query size: {{ bytesProcessed | fileSize:1 }}
                 </p>

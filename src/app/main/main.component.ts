@@ -120,6 +120,9 @@ export class MainComponent implements OnInit, OnDestroy {
   isEditingPagination: boolean = false 
   @ViewChild('pageInput') pageInput: ElementRef;
 
+  // Toggle for whether the map auto fits bounds on new features
+  autoFitBounds: boolean = true;
+
   // Current style rules
   styles: Array<StyleRule> = [];
 
@@ -517,6 +520,10 @@ ${USER_QUERY_END_MARKER}\n
         this._changeDetectorRef.detectChanges();
       });
 
+  }
+
+  updateAutoFitBounds(event: any) {
+    this.autoFitBounds = event.checked;
   }
 
   handleMaxPaginationChange(maxPagination: number) {
