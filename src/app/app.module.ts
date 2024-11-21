@@ -36,6 +36,7 @@ import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatCheckboxModule } from '@angular/material/checkbox'; 
 
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
@@ -87,6 +88,7 @@ if ( environment.production ) {
     FormsModule,
     ReactiveFormsModule,
     StorageServiceModule,
+    MatCheckboxModule,
 
     ColorPickerModule
   ],
