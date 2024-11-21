@@ -150,62 +150,29 @@ mat-progress-spinner {
   background: #e5e3df;
 }
 
-.mat-toolbar a {
-  text-decoration: none;
+.pagination-container {
+    display: flex;
+    align-items: center;
+    justify-items: center;
+    gap: 8px;
+    
 }
-
-.mat-toolbar h6 h5 {
-  font: 500 20px/32px Roboto, "Helvetica Neue", sans-serif
+.pagination-span {
+    width: 72px;
+    text-align: center;
 }
-
-.mat-button {
-  font-family: Roboto, "Helvetica Neue", sans-serif;
-  font-size: 14px;
-  font-weight: 500;
+.pagination-input::-webkit-outer-spin-button,
+.pagination-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
 }
-
-.feedback-link {
-  vertical-align: super;
+.pagination-input[type=number] {
+  -moz-appearance: textfield;
+  width: 72px;
+  box-sizing: border-box;
+  text-align: center;
 }
-
-.info-msg,
-.success-msg,
-.warning-msg,
-.error-msg {
-  margin: 10px 0;
-  padding: 5px;
-  border-radius: 3px 3px 3px 3px;
-}
-
-.info-msg {
-  align-items: center;
-  background-color: #BEF;
-  color: #059;
-  display: flex;
-  flex-direction: row;
-  justify-content: space-around;
-}
-
-.info-msg a {
-  color: #059;
-  text-decoration: underline;
-}
-
-.info-msg span {
-  margin: 0 4px;
-}
-
-.success-msg {
-  color: #270;
-  background-color: #DFF2BF;
-}
-
-.warning-msg {
-  color: #9F6000;
-  background-color: #FEEFB3;
-}
-
-.error-msg {
-  color: #D8000C;
-  background-color: #FFBABA;
+.flex {
+    display: flex;
+    align-items: center;
+    gap: 16px;
 }

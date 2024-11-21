@@ -27,7 +27,9 @@
 
 <div class="view">
   <mat-sidenav-container class="sidenav-container">
-
+    <mat-sidenav-content>
+      <app-map (maxPaginationChange)="handleMaxPaginationChange($event)" [rows]="rows" [page]="page" [geoColumn]="schemaFormGroup.controls.geoColumn.value" [styles]="styles" [autoFitBounds]="autoFitBounds"></app-map>
+    </mat-sidenav-content>
     <mat-sidenav #sidenav mode="side" position="start" [(opened)]="sideNavOpened">
         <section class="drawer">
           <mat-stepper orientation="vertical" #stepper class="stepper"
@@ -38,74 +40,51 @@
                 Authorize
               </button>
 
-              <form *ngIf="isSignedIn" [formGroup]="dataFormGroup">
-                <mat-form-field class="sql-form-field">
-                  <input type="text" placeholder="Project ID" matInput formControlName="projectID"
-                         [matAutocomplete]="auto" ([ngModel])="model">
-                  <mat-autocomplete #auto="matAutocomplete">
-                    <mat-option *ngFor="let project of matchingProjects" [value]="project.id">
-                      {{ project.id }}
-                    </mat-option>
-                  </mat-autocomplete>
-                </mat-form-field>
-
-                <codemirror ref="codemirror" mode="sql" formControlName="sql" ([ngModel])="model"
-                            ngDefaultControl
-                            (change)="dryRun()" (query)="query()"></codemirror>
-
-                <div>
-                  <button mat-raised-button color="primary" (click)="query(stepper)"
-                          [disabled]="!dataFormGroup.valid || pending">Run
-                  </button>
-                  <button mat-raised-button color="primary" matStepperNext
-                          [disabled]="!rows.length || pending"
-                          [matTooltip]="rows.length !== totalRows ? 'Results may be truncated due to size and performance limitations. Selecting fewer columns or less data may increase this limit.'
+            <form *ngIf="isSignedIn" [formGroup]="dataFormGroup">
+              <mat-form-field class="sql-form-field">
+                <input type="text" placeholder="Project ID" matInput formControlName="projectID" ([ngModel])="model"
+                  [matAutocomplete]="auto">
+                <mat-autocomplete #auto="matAutocomplete">
+                  <mat-option *ngFor="let project of matchingProjects" [value]="project.id">
+                    {{ project.id }}
+                  </mat-option>
+                </mat-autocomplete>
+              </mat-form-field>
+              <codemirror ref="codemirror" formControlName="sql" ([ngModel])="model" [config]="cmConfig"
+                (change)="dryRun()" (query)="query()"></codemirror>
+              <div>
+                <button mat-raised-button color="primary" (click)="query(stepper)"
+                  [disabled]="!dataFormGroup.valid || pending">Run</button>
+                <button mat-raised-button color="primary" matStepperNext [disabled]="!rows.length || pending"
+                  [matTooltip]="rows.length !== totalRows ? 'Results may be truncated due to size and performance limitations. Selecting fewer columns or less data may increase this limit.'
                                                                 : null" matTooltipPosition="after">
                     Show results ({{ rows.length | number }}<span *ngIf="rows.length !== totalRows"> of
                     {{ totalRows | number }}</span>)
-                  </button>
-                  <mat-progress-spinner *ngIf="pending" mode="indeterminate" [diameter]="24"
-                                        [strokeWidth]="4">
-                  </mat-progress-spinner>
-                  <p class="sql-caption" *ngIf="bytesProcessed >= 0">
-                    Estimated query size: {{ bytesProcessed | fileSize:1 }}
-                  </p>
-                  <p *ngIf="lintMessage" class="sql-lint">{{ lintMessage }}</p>
-                  <mat-form-field class="wide sql-location">
-                    <mat-select placeholder="Processing location" formControlName="location"
-                                ([ngModel])="model"
-                                matTooltip="Select processing location." matTooltipPosition="after">
-                      <mat-option value="">Auto-select</mat-option>
-                      <mat-option value="US">United States (US)</mat-option>
-                      <mat-option value="EU">European Union (EU)</mat-option>
-                      <mat-option value="us-east4">Northern Virginia (us-east4)</mat-option>
-                      <mat-option value="northamerica-northeast1">Montréal (northamerica-northeast1)
-                      </mat-option>
-                      <mat-option value="europe-west2">London (europe-west2)</mat-option>
-                      <mat-option value="europe-north1">Finland (europe-north1)</mat-option>
-                      <mat-option value="asia-south1">Mumbai (asia-south1)</mat-option>
-                      <mat-option value="asia-southeast1">Singapore (asia-southeast1)</mat-option>
-                      <mat-option value="asia-east1">Taiwan (asia-east1)</mat-option>
-                      <mat-option value="asia-northeast1">Tokyo (asia-northeast1)</mat-option>
-                      <mat-option value="australia-southeast1">Sydney (australia-southeast1)
-                      </mat-option>
-                    </mat-select>
-                  </mat-form-field>
-                </div>
-              </form>
-            </mat-step>
-
-            <mat-step [stepControl]="schemaFormGroup" label="Data">
-              <div style="margin-bottom: 2em">
-                <button mat-raised-button color="primary" matStepperNext>Add styles</button>
-              </div>
-              <form [formGroup]="schemaFormGroup">
-                <mat-form-field class="wide">
-                  <mat-select placeholder="Geometry column" formControlName="geoColumn"
-                              matTooltip="Select field containing WKT-formatted geometry"
-                              matTooltipPosition="after">
-                    <mat-option *ngFor="let column of geoColumnNames" [value]="column">{{ column }}
-                    </mat-option>
+                </button>
+                <mat-progress-spinner *ngIf="pending" mode="indeterminate" [diameter]="24" [strokeWidth]="4">
+                </mat-progress-spinner>
+                <mat-checkbox style="margin-top: 16px; display: block" [checked]="autoFitBounds" (change)="updateAutoFitBounds($event)" color="primary">
+                  Auto adjust map to fit new bounds
+                </mat-checkbox>
+                <p class="sql-caption" *ngIf="bytesProcessed >= 0">
+                  Estimated query size: {{ bytesProcessed | fileSize:1 }}
+                </p>
+                <p *ngIf="lintMessage" class="sql-lint">{{ lintMessage }}</p>
+                <mat-form-field class="wide sql-location">
+                  <mat-select placeholder="Processing location" formControlName="location" ([ngModel])="model"
+                    matTooltip="Select processing location." matTooltipPosition="after">
+                    <mat-option value="">Auto-select</mat-option>
+                    <mat-option value="US">United States (US)</mat-option>
+                    <mat-option value="EU">European Union (EU)</mat-option>
+                    <mat-option value="us-east4">Northern Virginia (us-east4)</mat-option>
+                    <mat-option value="northamerica-northeast1">Montréal (northamerica-northeast1)</mat-option>
+                    <mat-option value="europe-west2">London (europe-west2)</mat-option>
+                    <mat-option value="europe-north1">Finland (europe-north1)</mat-option>
+                    <mat-option value="asia-south1">Mumbai (asia-south1)</mat-option>
+                    <mat-option value="asia-southeast1">Singapore (asia-southeast1)</mat-option>
+                    <mat-option value="asia-east1">Taiwan (asia-east1)</mat-option>
+                    <mat-option value="asia-northeast1">Tokyo (asia-northeast1)</mat-option>
+                    <mat-option value="australia-southeast1">Sydney (australia-southeast1)</mat-option>
                   </mat-select>
                 </mat-form-field>
                 <mat-table *ngIf="data" [dataSource]="data" class="result-table">
@@ -127,13 +106,63 @@
               </form>
             </mat-step>
 
-            <mat-step [stepControl]="stylesFormGroup" label="Style">
-              <form [formGroup]="stylesFormGroup">
-                <mat-accordion class="styles-prop-list">
-                  <mat-expansion-panel *ngFor="let prop of StyleProps" [formGroupName]="prop.name">
-                    <mat-expansion-panel-header>
-                      <mat-panel-title>{{ prop.name }}</mat-panel-title>
-                      <mat-panel-description>
+          <mat-step [stepControl]="schemaFormGroup" label="Data">
+            <div style="margin-bottom: 2em">
+              <button mat-raised-button color="primary" matStepperNext>Add styles</button>
+            </div>
+            <form [formGroup]="schemaFormGroup">
+              <div class="flex">
+                <mat-form-field class="wide">
+                  <mat-select placeholder="Geometry column" formControlName="geoColumn" ([ngModel])="model"
+                    matTooltip="Select field containing WKT-formatted geometry" matTooltipPosition="after">
+                    <mat-option *ngFor="let column of geoColumnNames" [value]="column">{{ column }}</mat-option>
+                  </mat-select>
+                </mat-form-field>
+                <div class="pagination-container" *ngIf="!pending && rows.length">
+                  <button mat-icon-button color="primary" (click)="paginate(-1)" [disabled]="!rows.length || pending || maxPagination === 0 || page === 0">&lt;</button>
+                  <span class="pagination-span" [ngStyle]="{ 'cursor': (rows.length && maxPagination > 1) ? 'pointer' : 'default' }" *ngIf="!isEditingPagination" (click)="rows.length && maxPagination > 1 && !pending && startPaginationEditing()">
+                    {{ page === 0 ? 'All results' : (page) }}
+                  </span>
+                  <input
+                    #pageInput
+                    class="pagination-input"
+                    [attr.autofocus]="true"
+                    *ngIf="isEditingPagination"
+                    [value]="page === 0 ? '' : page"
+                    min="0"
+                    max="maxPagination"
+                    (blur)="finishPaginationEditing($event)"
+                    (keydown.enter)="finishPaginationEditing($event)"
+                    type="number"
+                  />
+                  <button mat-icon-button color="primary" (click)="paginate(1)" [disabled]="!rows.length || pending || maxPagination <= 1 || page === maxPagination">&gt;</button>
+                </div>
+              </div>
+              <mat-table *ngIf="data" [dataSource]="data" class="result-table">
+                <ng-container *ngFor="let column of columnNames; let i = index" [matColumnDef]="column">
+                  <mat-header-cell *matHeaderCellDef>
+                    <div class="header-cell-title">{{ column }}</div>
+                  </mat-header-cell>
+                  <mat-cell *matCellDef="let row" class="result-table-cell" [title]="row[column]">{{ row[column] }}
+                  </mat-cell>
+                </ng-container>
+                <mat-header-row *matHeaderRowDef="columnNames" [ngStyle]="{'min-width': getRowWidth()}">
+                </mat-header-row>
+                <mat-row *matRowDef="let row; columns: columnNames;" [ngStyle]="{'min-width': getRowWidth()}"></mat-row>
+              </mat-table>
+            </form>
+            <p class="sql-caption" *ngIf="!pending && rows.length">
+              Total rows displayed: {{ maxPagination }}
+            </p>
+          </mat-step>
+
+          <mat-step [stepControl]="stylesFormGroup" label="Style">
+            <form [formGroup]="stylesFormGroup">
+              <mat-accordion class="styles-prop-list">
+                <mat-expansion-panel *ngFor="let prop of StyleProps" [formGroupName]="prop.name">
+                  <mat-expansion-panel-header>
+                    <mat-panel-title>{{ prop.name }}</mat-panel-title>
+                    <mat-panel-description>
                       <span *ngIf="getPropStatus(prop.name) === 'computed'"
                             class="rule-badge computed">data-driven</span>
                         <span *ngIf="getPropStatus(prop.name) === 'global'"

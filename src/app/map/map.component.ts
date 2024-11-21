@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-import { Component, ElementRef, Input, NgZone, ViewChild, AfterViewInit, IterableDiffers, IterableDiffer } from '@angular/core';
+import { Component, ElementRef, Input, NgZone, ViewChild, AfterViewInit, IterableDiffers, IterableDiffer, Output, EventEmitter } from '@angular/core';
+import { StylesService, StyleRule } from '../services/styles.service';
 import { GeoJsonLayer } from '@deck.gl/layers';
 import { GoogleMapsOverlay } from '@deck.gl/google-maps';
 import bbox from '@turf/bbox';
@@ -41,6 +42,9 @@ const GEOMETRY_ANALYTICS_DEBOUNCE_TIMER = 30000;
 export class MapComponent implements AfterViewInit {
   // DOM element for map.
   @ViewChild('mapEl') mapEl: ElementRef;
+
+  // Gives MainComponent the max pagination length, will differ from the total rows retrieved if some rows have null values for a geometry column.
+  @Output() maxPaginationChange = new EventEmitter<number>();
 
   // Maps API instance.
   map: google.maps.Map;
@@ -86,6 +90,12 @@ export class MapComponent implements AfterViewInit {
 
   private _deckLayer: GoogleMapsOverlay = null;
   private _iterableDiffer = null;
+  
+  // Index for viewing geojson data one-by-one, 0 indicates view all data.
+  private _page: number = 0;
+
+  // Whether or not the bounds should be adjusted on new features (i.e. clicking on Geography Column, new queries)
+  private _autoFitBounds: boolean = true;
 
   @Input()
   set rows(rows: object[]) {
@@ -98,7 +108,15 @@ export class MapComponent implements AfterViewInit {
   @Input()
   set geoColumn(geoColumn: string) {
     this._geoColumn = geoColumn;
+    this._page = 0;
     this.updateFeatures();
+    this.updateStyles();
+  }
+
+  @Input()
+  set page(page: number) {
+    this._page = page;
+    this.updateBounds();
     this.updateStyles();
   }
 
@@ -106,6 +124,11 @@ export class MapComponent implements AfterViewInit {
   set styles(styles: StyleRule[]) {
     this._styles = styles;
     this.updateStyles();
+  }
+
+  @Input()
+  set autoFitBounds(autoFitBounds: boolean) {
+    this._autoFitBounds = autoFitBounds;
   }
 
   constructor(private _ngZone: NgZone, iterableDiffers: IterableDiffers) {
@@ -178,24 +201,27 @@ export class MapComponent implements AfterViewInit {
    */
   updateFeatures() {
     if (!this.map) return;
-
     this._features = GeoJSONService.rowsToGeoJSON(this._rows, this._geoColumn);
-
+    this.maxPaginationChange.emit(this._features.length);
     // Note which types of geometry are being shown.
     this._activeGeometryTypes.clear();
     this._features.forEach((feature) => {
       this._activeGeometryTypes.add(feature.geometry['type']);
     });
+    // Fit viewport bounds to the new data.
+    this.updateBounds()
+  }
 
-    this.reportGeometryAnalytics();
-
-    // Fit viewport bounds to the data.
-    const [minX, minY, maxX, maxY] = bbox({ type: 'FeatureCollection', features: this._features });
+  /**
+   * Updates the viewport bounds of data in the Maps API
+   */
+  updateBounds() {
+    const [minX, minY, maxX, maxY] = bbox({ type: 'FeatureCollection', features: this._page === 0 ? this._features : [this._features[this._page - 1]]});
     const bounds = new google.maps.LatLngBounds(
       new google.maps.LatLng(minY, minX),
       new google.maps.LatLng(maxY, maxX)
     );
-    if (!bounds.isEmpty()) { this.map.fitBounds(bounds); }
+    if (!bounds.isEmpty() && this._autoFitBounds) { this.map.fitBounds(bounds); }
   }
 
   /**
@@ -213,8 +239,7 @@ export class MapComponent implements AfterViewInit {
 
     const layer = new GeoJsonLayer({
       id: LAYER_ID,
-      data: this._features,
-
+      data: this._page === 0 ? this._features : [this._features[this._page - 1]],
       pickable: true,
       autoHighlight: true,
       highlightColor: [219, 68, 55], // #DB4437

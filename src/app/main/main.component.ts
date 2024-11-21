@@ -14,12 +14,17 @@
  * limitations under the License.
  */
 
-import {Component, ChangeDetectorRef, Inject, NgZone, OnInit, OnDestroy, AfterViewInit} from '@angular/core';
-import {ActivatedRoute} from '@angular/router';
-import {FormBuilder, FormGroup, FormControl, FormArray, Validators} from '@angular/forms';
-import {MatTableDataSource} from '@angular/material/table';
-import {MatSnackBar} from '@angular/material/snack-bar';
-import {StepperSelectionEvent} from '@angular/cdk/stepper';
+import { Component, ChangeDetectorRef, Inject, NgZone, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+import { FormBuilder, FormGroup, FormControl, FormArray, Validators } from '@angular/forms';
+import { LOCAL_STORAGE, WebStorageService } from 'angular-webstorage-service';
+import { MatTableDataSource, MatSnackBar } from '@angular/material';
+import { StepperSelectionEvent } from '@angular/cdk/stepper';
+import { Subject } from 'rxjs/Subject';
+import { Subscription } from 'rxjs/Subscription';
+import 'rxjs/add/operator/debounceTime';
+import 'rxjs/add/operator/map';
+import * as CryptoJS from "crypto-js";
 
 import {LOCAL_STORAGE, StorageService} from 'ngx-webstorage-service';
 
@@ -117,6 +122,16 @@ export class MainComponent implements OnInit, OnDestroy, AfterViewInit {
   // UI state
   stepIndex: Number = 0;
 
+  // Index for viewing geojson data one-by-one, 0 indicates view all data.
+  page: number = 0;
+  // Maximum number of features actually displayed on map (differs from total rows if some rows contain null value for a geometry column)
+  maxPagination: number = 0; 
+  isEditingPagination: boolean = false 
+  @ViewChild('pageInput') pageInput: ElementRef;
+
+  // Toggle for whether the map auto fits bounds on new features
+  autoFitBounds: boolean = true;
+
   // Current style rules
   styles: Array<StyleRule> = [];
 
@@ -152,6 +167,7 @@ export class MainComponent implements OnInit, OnDestroy, AfterViewInit {
     this.columnNames = [];
     this.geoColumnNames = [];
     this.rows = [];
+    this.page = 0;
 
     // Read parameters from URL
     this.projectID = this._route.snapshot.paramMap.get('project');
@@ -177,7 +193,10 @@ export class MainComponent implements OnInit, OnDestroy, AfterViewInit {
     });
 
     // Schema form group
-    this.schemaFormGroup = this._formBuilder.group({geoColumn: ['']});
+    this.schemaFormGroup = this._formBuilder.group({ geoColumn: [''] });
+    this.schemaFormGroup.get('geoColumn').valueChanges.subscribe(newValue => {
+      this.page = 0;
+    });
 
     // Style rules form group
     const stylesGroupMap = {};
@@ -475,6 +494,9 @@ export class MainComponent implements OnInit, OnDestroy, AfterViewInit {
     // Clear the existing sharing URL.
     this.clearGeneratedSharingUrl();
 
+    // Reset the data index
+    this.page = 0
+
     let geoColumns;
 
     this._dryRun()
@@ -518,6 +540,53 @@ export class MainComponent implements OnInit, OnDestroy, AfterViewInit {
         this._changeDetectorRef.detectChanges();
       });
 
+  }
+
+  updateAutoFitBounds(event: any) {
+    this.autoFitBounds = event.checked;
+  }
+
+  handleMaxPaginationChange(maxPagination: number) {
+    this.maxPagination = maxPagination;
+  }
+
+  paginate(_page: number) {
+    // Left button was pressed
+    if (_page === -1 && this.page !== 0) { 
+      this.page -= 1;
+    } // Right button was pressed
+    else if (_page === 1 && this.page != this.maxPagination) {
+      this.page += 1;
+    }
+  }
+
+  startPaginationEditing() {
+    this.isEditingPagination = true;
+    setTimeout(() => {
+      this.pageInput.nativeElement.focus();
+    });
+  }
+
+  finishPaginationEditing(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const value = input.value;
+    
+    if (!value) {
+      this.page = 0;
+    }
+    const newPage = parseInt(value, 10);
+
+    if (!isNaN(newPage)) {
+      if (newPage < 0) {
+        this.page = 0;
+      } else if (newPage > this.maxPagination) {
+        this.page = this.maxPagination;
+      }
+      else {
+        this.page = newPage;
+      }
+    }
+    this.isEditingPagination = false;
   }
 
   onApplyStylesClicked() {
